@@ -1,0 +1,36 @@
+model:
+  provider: openai-compat
+  name: nous-hermes3
+
+backend:
+  default: ollama            # Singapore team has machines with GPUs
+  temperature: 0.15
+  max_iterations: 50         # deep analysis — take the time
+
+skills:
+  load:
+    - SKILL-web
+    - SKILL-crypto
+    - SKILL-binary
+    - SKILL-forensics
+    - SKILL-osint
+    - SKILL-recon
+    - SKILL-misc
+    - SKILL-feedback
+  evolution:
+    enabled: true
+    auto_capture: true
+    trigger_tool_calls: 5
+  curator:
+    enabled: false           # no curation during active competition
+
+workspace:
+  dir: ./workspace
+
+memory:
+  enabled: true
+  backend: local
+
+logging:
+  level: info
+  file: ~/.ctf-agent/profiles/ctf-singapore/logs/agent.log

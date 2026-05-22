@@ -1,0 +1,36 @@
+model:
+  provider: openai-compat
+  name: nous-hermes3
+
+backend:
+  default: openrouter        # cloud for speed on-site — no GPU at a hotel
+  temperature: 0.05          # very low — deterministic, no creative detours
+  max_iterations: 20         # fast cutoff — hand off to Singapore if stuck
+
+skills:
+  load:
+    - SKILL-web
+    - SKILL-crypto
+    - SKILL-binary
+    - SKILL-forensics
+    - SKILL-osint
+    - SKILL-recon
+    - SKILL-misc
+    - SKILL-feedback
+  evolution:
+    enabled: true
+    auto_capture: true
+    trigger_tool_calls: 4    # capture patterns quickly during competition
+  curator:
+    enabled: false           # no weekly curation during active competition
+
+workspace:
+  dir: ./workspace
+
+memory:
+  enabled: true
+  backend: local
+
+logging:
+  level: info
+  file: ~/.ctf-agent/profiles/ctf-vegas/logs/agent.log

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTF Command Center 🚩</title>
+<style>
+  :root { --bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',monospace}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:16px}
+  header h1{font-size:1.1rem;color:var(--accent)}
+  #scorebar{margin-left:auto;font-size:.85rem;color:var(--muted)}
+  #scorebar span{color:var(--text);font-weight:600}
+  #ws-dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
+  #ws-dot.on{background:var(--green)}
+  .layout{display:flex;height:calc(100vh - 49px);overflow:hidden}
+  .sidebar{width:370px;border-right:1px solid var(--border);display:flex;flex-direction:column}
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .toolbar{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
+  .btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:.8rem}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#0d1117;border-color:var(--accent);font-weight:600}
+  .btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+  select,input,textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:.85rem;font-family:inherit}
+  select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  #clist{overflow-y:auto;flex:1}
+  .ci{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+  .ci:hover{background:#21262d}
+  .ci.active{background:#1f3447;border-left:3px solid var(--accent)}
+  .ci.solved{opacity:.55}
+  .ci-title{font-size:.9rem;font-weight:600}
+  .ci-meta{font-size:.75rem;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+  .badge{padding:1px 7px;border-radius:10px;font-size:.7rem;font-weight:600}
+  .badge.unsolved{background:#3d1f1f;color:var(--red)}
+  .badge.in_progress{background:#3d2e00;color:var(--yellow)}
+  .badge.solved{background:#1a3a1f;color:var(--green)}
+  .cat{padding:1px 7px;border-radius:10px;font-size:.7rem;background:#1c2a3a;color:var(--accent)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--yellow);display:inline-block;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .mtoolbar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  #ctitle{font-size:1rem;font-weight:700;flex:1}
+  #conv{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .msg{border-radius:8px;padding:10px 14px;max-width:90%;font-size:.85rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+  .msg.ai{background:#1c2a3a;border:1px solid #253a52;align-self:flex-start}
+  .msg.human{background:#1f2f1f;border:1px solid #2a3f2a;align-self:flex-end}
+  .msg.tool{background:#1e1a2e;border:1px solid #2e2845;font-family:monospace;font-size:.78rem;color:var(--muted)}
+  .msg.system{background:#2a1a1a;border:1px solid #3f2828;color:var(--red)}
+  .mrole{font-size:.7rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase}
+  .flag-banner{background:#1a3a1f;border:2px solid var(--green);border-radius:10px;padding:14px 20px;text-align:center}
+  .flag-text{font-family:monospace;font-size:1.3rem;color:var(--green);font-weight:700;margin-top:6px}
+  .ibar{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+  #chat-in{flex:1;resize:none;height:40px}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+  .overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:480px;max-width:95vw;display:flex;flex-direction:column;gap:12px}
+  .modal h2{font-size:1rem;color:var(--accent)}
+  .modal label{font-size:.8rem;color:var(--muted)}
+  .modal input,.modal select,.modal textarea{width:100%}
+  .modal textarea{height:100px}
+  .mactions{display:flex;gap:8px;justify-content:flex-end}
+  #toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 18px;font-size:.85rem;opacity:0;transition:opacity .3s;z-index:200;max-width:320px}
+  #toast.show{opacity:1}
+  #toast.g{border-color:var(--green);color:var(--green)}
+  #toast.r{border-color:var(--red);color:var(--red)}
+  .ph{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<header>
+  <div id="ws-dot" title="WebSocket"></div>
+  <h1>🚩 CTF Command Center</h1>
+  <div id="scorebar">Loading…</div>
+  <button class="btn" onclick="setApiKey()" title="Set your personal Anthropic API key" style="margin-left:8px;font-size:.75rem">🔑 API Key</button>
+  <span id="key-indicator" style="font-size:.72rem;color:var(--muted)">no key set</span>
+</header>
+<div class="layout">
+  <div class="sidebar">
+    <div class="toolbar">
+      <button class="btn primary" onclick="openModal()">+ New</button>
+      <select id="fs" onchange="load()">
+        <option value="">All</option>
+        <option value="unsolved">Unsolved</option>
+        <option value="in_progress">In Progress</option>
+        <option value="solved">Solved</option>
+      </select>
+      <select id="fc" onchange="load()">
+        <option value="">All cats</option>
+        <option>web</option><option>crypto</option><option>binary</option>
+        <option>forensics</option><option>osint</option><option>misc</option><option>recon</option>
+      </select>
+    </div>
+    <div id="clist"><div class="ph">Loading…</div></div>
+  </div>
+  <div class="main">
+    <div class="mtoolbar" id="mt" style="display:none">
+      <div id="ctitle">—</div>
+      <select id="sp">
+        <option value="ctf-singapore">ctf-singapore</option>
+        <option value="ctf-vegas">ctf-vegas</option>
+        <option value="ctf-solo">ctf-solo</option>
+        <option value="ctf-team">ctf-team</option>
+        <option value="ctf-practice">ctf-practice</option>
+      </select>
+      <button class="btn primary" id="bsolve" onclick="doSolve()">🤖 Solve</button>
+      <button class="btn danger" id="bcancel" onclick="doCancel()" style="display:none">🛑 Cancel</button>
+      <button class="btn" onclick="flagModal()">🚩 Flag</button>
+    </div>
+    <div id="conv"><div class="ph">Select a challenge →</div></div>
+    <div class="ibar" id="ibar" style="display:none">
+      <textarea id="chat-in" placeholder="Add a note…" onkeydown="noteKey(event)"></textarea>
+      <button class="btn primary" onclick="sendNote()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- New challenge modal -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <h2>+ New Challenge</h2>
+    <label>Title</label><input id="mt-" placeholder="Baby RSA">
+    <label>Category</label>
+    <select id="mc"><option>web</option><option>crypto</option><option>binary</option><option>forensics</option><option>osint</option><option>misc</option><option>recon</option><option>unknown</option></select>
+    <label>Points</label><input id="mp" placeholder="0">
+    <label>Profile</label>
+    <select id="mpr"><option value="ctf-singapore">ctf-singapore (default)</option><option value="ctf-vegas">ctf-vegas (fast)</option><option value="ctf-solo">ctf-solo</option></select>
+    <label>Description</label><textarea id="md" placeholder="Paste challenge text…"></textarea>
+    <label>Files in workspace/ (comma-separated)</label><input id="mf" placeholder="binary, capture.pcap">
+    <div class="mactions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="createChallenge()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Flag modal -->
+<div class="overlay" id="fmodal">
+  <div class="modal">
+    <h2>🚩 Submit Flag</h2>
+    <label>Flag</label><input id="ff" placeholder="CTF{...}">
+    <label>Your name</label><input id="fn" placeholder="Your name">
+    <div class="mactions">
+      <button class="btn" onclick="closeFlagModal()">Cancel</button>
+      <button class="btn primary" onclick="submitFlag()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const TOKEN = localStorage.getItem('ctf_token') || prompt('Team Token (default: defcon2026):') || 'defcon2026';
+localStorage.setItem('ctf_token', TOKEN);
+const H = {'X-CTF-Token': TOKEN, 'Content-Type': 'application/json'};
+const CE = {web:'🌐',crypto:'🔐',binary:'💾',forensics:'🔬',osint:'🕵️',misc:'🎲',recon:'📡',unknown:'❓'};
+const SE = {unsolved:'🔴',in_progress:'🟡',solved:'🟢',abandoned:'⚫'};
+let cid = null, ws = null, wsr = 0;
+
+function getApiKey() { return localStorage.getItem('anthropic_api_key') || ''; }
+function setApiKey() {
+  const cur = getApiKey();
+  const k = prompt('Your Anthropic API key (sk-ant-...)\nLeave blank to clear.\nThis stays in YOUR browser only — never sent to or stored by the server.', cur);
+  if (k === null) return; // cancelled
+  if (k.trim()) {
+    localStorage.setItem('anthropic_api_key', k.trim());
+    updateKeyIndicator();
+    toast('API key saved in your browser', 'g');
+  } else {
+    localStorage.removeItem('anthropic_api_key');
+    updateKeyIndicator();
+    toast('API key cleared — server fallback key will be used', '');
+  }
+}
+function updateKeyIndicator() {
+  const el = document.getElementById('key-indicator');
+  const k = getApiKey();
+  el.textContent = k ? '✓ key set' : 'no key set';
+  el.style.color = k ? 'var(--green)' : 'var(--muted)';
+}
+
+async function api(m, p, b) {
+  const r = await fetch(p, {method:m, headers:H, body:b?JSON.stringify(b):undefined});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function connectWS() {
+  const proto = location.protocol==='https:'?'wss':'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onopen = () => { document.getElementById('ws-dot').classList.add('on'); wsr=0; setInterval(()=>ws.readyState===1&&ws.send('ping'),20000); };
+  ws.onclose = () => { document.getElementById('ws-dot').classList.remove('on'); setTimeout(connectWS, Math.min(30000,1000*++wsr)); };
+  ws.onmessage = e => { const ev=JSON.parse(e.data); if(ev.type==='heartbeat'||ev.type==='pong') return; handleEv(ev); };
+}
+
+function handleEv(ev) {
+  if(ev.type==='challenge_added') { toast(`New: ${ev.title}`,'g'); load(); }
+  if(ev.type==='flag_found') { toast(`🚩 ${ev.flag} — ${ev.title}`,'g'); load(); if(cid===ev.challenge_id) loadConv(cid); }
+  if(['status_changed','assigned'].includes(ev.type)) { load(); if(cid===ev.challenge_id) updateMT(cid); }
+  if(ev.type==='message' && cid===ev.challenge_id) loadConv(cid);
+  if(ev.type==='error') { toast(`Error #${ev.challenge_id}: ${ev.error}`,'r'); load(); }
+  updateScore();
+}
+
+async function load() {
+  const s=document.getElementById('fs').value, c=document.getElementById('fc').value;
+  let url='/api/challenges'; const p=[];
+  if(s) p.push(`status=${s}`); if(c) p.push(`category=${c}`);
+  if(p.length) url+='?'+p.join('&');
+  const data = await api('GET',url);
+  renderList(data);
+}
+
+function renderList(data) {
+  const el=document.getElementById('clist');
+  if(!data.length){el.innerHTML='<div class="ph">No challenges</div>';return;}
+  const ord={in_progress:0,unsolved:1,solved:2,abandoned:3};
+  data.sort((a,b)=>(ord[a.status]||1)-(ord[b.status]||1));
+  el.innerHTML=data.map(c=>{
+    const ce=CE[c.category]||'❓', ag=c.agent_running?'<span class="dot"></span> ':'';
+    const pts=c.points?` [${c.points}pts]`:'', who=c.assigned_to?` · ${c.assigned_to}`:'';
+    return `<div class="ci ${c.status} ${c.id===cid?'active':''}" onclick="sel(${c.id})">
+      <div class="ci-title">${ag}${ce} #${c.id} ${esc(c.title)}</div>
+      <div class="ci-meta"><span class="badge ${c.status}">${SE[c.status]||''} ${c.status}</span><span class="cat">${c.category}</span><span>${pts}${who}</span></div>
+    </div>`;
+  }).join('');
+}
+
+async function updateScore() {
+  const sb=await api('GET','/api/scoreboard');
+  document.getElementById('scorebar').innerHTML=`<span>${sb.solved}</span>/${sb.total} solved · <span>${sb.points}pts</span>`;
+}
+
+async function sel(id) {
+  cid=id;
+  document.getElementById('mt').style.display='flex';
+  document.getElementById('ibar').style.display='flex';
+  await updateMT(id); await loadConv(id); load();
+}
+
+async function updateMT(id) {
+  const c=await api('GET',`/api/challenges/${id}`);
+  const ce=CE[c.category]||'❓', pts=c.points?` [${c.points}pts]`:'';
+  document.getElementById('ctitle').textContent=`${ce} #${c.id} ${c.title}${pts} · ${c.category}`;
+  document.getElementById('bsolve').style.display=c.status==='solved'||c.agent_running?'none':'';
+  document.getElementById('bcancel').style.display=c.agent_running?'':'none';
+}
+
+async function loadConv(id) {
+  const c=await api('GET',`/api/challenges/${id}`);
+  const el=document.getElementById('conv');
+  let html='';
+  if(c.flag) html+=`<div class="flag-banner">🚩 FLAG FOUND<div class="flag-text">${esc(c.flag)}</div></div>`;
+  const msgs=c.messages||[];
+  if(!msgs.length&&!c.flag) html+=`<div class="ph"><div><b>${esc(c.title)}</b><br><br>${esc(c.description)}<br><br>Click 🤖 Solve to start.</div></div>`;
+  html+=msgs.map(m=>`<div class="msg ${m.role}"><div class="mrole">${m.tool_name?`tool·${m.tool_name}`:m.role}</div>${esc(m.content)}</div>`).join('');
+  el.innerHTML=html; el.scrollTop=el.scrollHeight;
+}
+
+async function doSolve() {
+  if(!cid) return;
+  const profile=document.getElementById('sp').value;
+  const api_key=getApiKey()||undefined;
+  if(!api_key && !confirm('No personal API key set.\nThe server\'s fallback key will be used (if configured).\nContinue?')) return;
+  try { const r=await api('POST',`/api/challenges/${cid}/solve`,{profile,api_key}); toast(`Agent started (${profile}) · ${r.status}`,'g'); document.getElementById('bsolve').style.display='none'; document.getElementById('bcancel').style.display=''; load(); }
+  catch(e){toast(`Error: ${e.message}`,'r');}
+}
+
+async function doCancel() {
+  if(!cid) return;
+  try { await api('DELETE',`/api/challenges/${cid}/solve`); toast('Agent cancelled','g'); updateMT(cid); load(); }
+  catch(e){toast(`Error: ${e.message}`,'r');}
+}
+
+async function sendNote() {
+  const input=document.getElementById('chat-in'), text=input.value.trim();
+  if(!text||!cid) return; input.value='';
+  const el=document.getElementById('conv');
+  el.innerHTML+=`<div class="msg human"><div class="mrole">note</div>${esc(text)}</div>`; el.scrollTop=el.scrollHeight;
+}
+function noteKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendNote();}}
+
+function openModal(){document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function flagModal(){document.getElementById('fmodal').classList.add('open');}
+function closeFlagModal(){document.getElementById('fmodal').classList.remove('open');}
+
+async function createChallenge() {
+  const title=document.getElementById('mt-').value.trim(), desc=document.getElementById('md').value.trim();
+  if(!title||!desc){toast('Title and description required','r');return;}
+  const files=document.getElementById('mf').value.split(',').map(s=>s.trim()).filter(Boolean);
+  try {
+    const r=await api('POST','/api/challenges',{title,description:desc,category:document.getElementById('mc').value,points:parseInt(document.getElementById('mp').value)||0,profile:document.getElementById('mpr').value,files});
+    toast(`Challenge #${r.id} created!`,'g'); closeModal(); load();
+    document.getElementById('mt-').value=''; document.getElementById('md').value=''; document.getElementById('mf').value='';
+  } catch(e){toast(`Error: ${e.message}`,'r');}
+}
+
+async function submitFlag() {
+  if(!cid) return;
+  const flag=document.getElementById('ff').value.trim(), name=document.getElementById('fn').value.trim()||'team';
+  if(!flag){toast('Flag required','r');return;}
+  try { await api('POST',`/api/challenges/${cid}/flag`,{flag,submitted_by:name}); toast('🚩 Flag submitted!','g'); closeFlagModal(); load(); loadConv(cid); }
+  catch(e){toast(`Error: ${e.message}`,'r');}
+}
+
+let toastT;
+function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className=`show ${type}`;clearTimeout(toastT);toastT=setTimeout(()=>el.className='',4000);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+connectWS(); load(); updateScore(); updateKeyIndicator();
+setInterval(load,15000); setInterval(updateScore,15000);
+</script>
+</body>
+</html>

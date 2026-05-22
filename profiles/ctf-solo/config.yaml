@@ -1,0 +1,37 @@
+model:
+  provider: openai-compat   # uses llm_backend.py factory
+  name: nous-hermes3        # override with OLLAMA_MODEL / OPENROUTER_MODEL env var
+
+backend:
+  default: ollama           # ollama | openrouter | together
+  temperature: 0.1
+  max_iterations: 30
+
+skills:
+  load:
+    - SKILL-web
+    - SKILL-crypto
+    - SKILL-binary
+    - SKILL-forensics
+    - SKILL-osint
+    - SKILL-recon
+    - SKILL-misc
+    - SKILL-feedback
+  evolution:
+    enabled: true
+    auto_capture: true
+    trigger_tool_calls: 5   # auto-generate skill after 5+ tool calls on a case
+  curator:
+    enabled: true
+    interval_days: 7
+
+workspace:
+  dir: ./workspace
+
+memory:
+  enabled: true
+  backend: local
+
+logging:
+  level: info
+  file: ~/.ctf-agent/profiles/ctf-solo/logs/agent.log

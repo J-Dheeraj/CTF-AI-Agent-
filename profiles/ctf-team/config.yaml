@@ -1,0 +1,37 @@
+model:
+  provider: openai-compat
+  name: nous-hermes3
+
+backend:
+  default: ollama
+  temperature: 0.2          # slightly higher for more exploratory team discussion
+  max_iterations: 40        # more iterations — team mode explores more paths
+
+skills:
+  load:
+    - SKILL-web
+    - SKILL-crypto
+    - SKILL-binary
+    - SKILL-forensics
+    - SKILL-osint
+    - SKILL-recon
+    - SKILL-misc
+    - SKILL-feedback
+  evolution:
+    enabled: true
+    auto_capture: true
+    trigger_tool_calls: 5
+  curator:
+    enabled: true
+    interval_days: 7
+
+workspace:
+  dir: ./workspace
+
+memory:
+  enabled: true
+  backend: local
+
+logging:
+  level: info
+  file: ~/.ctf-agent/profiles/ctf-team/logs/agent.log

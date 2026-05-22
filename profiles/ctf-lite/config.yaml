@@ -1,0 +1,18 @@
+model:
+  provider: groq
+  name: llama-3.1-8b-instant
+backend:
+  default: groq
+  temperature: 0.1
+  max_iterations: 20
+skills:
+  load: [SKILL-crypto, SKILL-misc]
+  evolution:
+    enabled: false
+    auto_capture: false
+  curator:
+    enabled: false
+workspace:
+  dir: ./workspace
+logging:
+  level: info
